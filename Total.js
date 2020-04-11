@@ -2,8 +2,9 @@ import React, { Component } from 'react'
 
 export default class Total extends Component {
 	render() {
-		const { course } = this.props;
-		const total = course.parts[0].exercises+course.parts[1].exercises+course.parts[2].exercises;
+		const { parts } = this.props.course;
+		let total = parts.reduce((acc, part) => {
+			return acc + part.exercises },0)
 		return (
 			<p>
 				Number of exercises: {total}
