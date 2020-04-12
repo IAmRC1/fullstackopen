@@ -1,64 +1,82 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
-import Country from './components/Country'
-import SingleCountry from './components/SingleCountry'
+import Note from './components/Note'
+import noteService from './services/notes'
 
 const App = () => {
-	const [name, setName] = useState('')
-	const [countries, setCountries] = useState([])
-	const [weather, setWeather] = useState()
-	const hook = () => {
+  const [notes, setNotes] = useState([])
+  const [newNote, setNewNote] = useState('')
+  const [showAll, setShowAll] = useState(true) 
+	
+	useEffect(() => {
 		axios
-			.get('https://restcountries.eu/rest/v2/all')
-			.then(response => {
-				setCountries(response.data)
-			})
-	}
-	useEffect(hook, [])
+		.get('http://localhost:3001/notes')
+		.then(response => setNotes(response.data))
+		}, [])
 
-	const params = {
-		access_key : process.env.REACT_APP_API_KEY,
-		query: `${name}`
-	}
-	const temp = () => {
+
+  const handleNoteChange = (e) => {
+    setNewNote(e.target.value)
+  }
+
+  const addNote = (event) => {
+    event.preventDefault()
+    const noteObject = {
+      content: newNote,
+      date: new Date().toISOString(),
+      important: Math.random() < 0.5,
+      id: notes.length + 1,
+		}
 		axios
-			.get('http://api.weatherstack.com/current', {params})
-			.then(response => {
-				setWeather(response.data)
-			})
-			.catch(error => console.log('error', error))
+    .post('http://localhost:3001/notes', noteObject)
+    .then(response => {
+      setNotes(notes.concat(response.data))
+      setNewNote('')
+    })
 	}
-	useEffect(temp, [name])
+	
+	const toggleImportanceOf = id => {
+		const url = `http://localhost:3001/notes/${id}`
+		const note = notes.find(n => n.id === id)
+		const changedNote = { ...note, important: !note.important }
+	
+		axios.put(url, changedNote).then(response => {
+			setNotes(notes.map(note => note.id !== id ? note : response.data))
+		})
+	}
 
 	
-	const handleName = (e) => {setName(e.target.value)}
 
-	let filteredCountries = name === '' ? countries : countries.filter(country => JSON.stringify(country.name).toLowerCase().includes(name.toLowerCase()))
+
 	
-	return (
-		<div>
-			<h1>Countries</h1>
-			<label>
-				find countries: 
-				<input type="text" 
-					value={name} 
-					onChange={handleName} 
-					required /> 
-			</label>
-			{filteredCountries.length > 1 
-				? ((filteredCountries.length > 10 && name.length > 0) 
-						? <ul>
-								<li>Too many matches, specify another filter</li>
-							</ul>
-						: <ul>
-								{filteredCountries.map((country, i) => 
-									<Country key={i} country={country} />
-								)}
-							</ul>
-					)
-				:	filteredCountries.map((country, i) => <SingleCountry key={i} country={country} weather={weather} />)}
-		</div>
-	)
+
+  const notesToShow = showAll
+    ? notes
+    : notes.filter(note => note.important)
+
+  return (
+      <>
+      <h1>Notes</h1>
+      <div>
+        <button onClick={() => setShowAll(!showAll)}>
+          show {showAll ? 'important' : 'all' }
+        </button>
+      </div>
+      <ul>
+        {notesToShow.map(note => 
+					<Note 
+						key={note.id} 
+						note={note} 
+						toggleImportance={() => toggleImportanceOf(note.id)}
+						
+					/>
+        )}
+      </ul>
+      <form onSubmit={addNote}>
+        <input value={newNote} onChange={handleNoteChange} />
+        <button type="submit">save</button>
+      </form>
+      </>
+  )
 }
-
 export default App
