@@ -1,9 +1,9 @@
 import React from 'react'
 
 const PersonForm = (props) => {
-  const { addName, newName, newNumber, handleChangeName, handleChangeNum } = props;
+  const { addPerson, newName, newNumber, handleChangeName, handleChangeNum } = props;
   return (
-    <form onSubmit={addName} >
+    <form onSubmit={addPerson} >
 				<div>
 					<label>
 						name: 
